@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout1}">
+<body>
+<div layout:fragment="content">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Liste des produits <span class="badge bg-secondary" th:text="${totalElements}">0</span></span>
+            <a class="btn btn-primary btn-sm" th:href="@{/admin/newProduct}" sec:authorize="hasRole('ADMIN')">+ Nouveau produit</a>
+        </div>
+        <div class="card-body">
+            <!-- Recherche -->
+            <form class="row g-2 mb-3" method="get" th:action="@{/user/index}">
+                <div class="col-auto">
+                    <input type="text" name="keyword" class="form-control" placeholder="Rechercher par nom..."
+                           th:value="${keyword}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-primary">Rechercher</button>
+                    <a class="btn btn-outline-secondary" th:href="@{/user/index}" th:if="${!keyword.isEmpty()}">Reinitialiser</a>
+                </div>
+            </form>
+
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th>ID</th><th>Nom</th><th>Prix</th><th>Quantite</th>
+                    <th sec:authorize="hasRole('ADMIN')">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${productList}">
+                    <td th:text="${p.id}"></td>
+                    <td th:text="${p.name}"></td>
+                    <td th:text="${#numbers.formatDecimal(p.price, 1, 'WHITESPACE', 2, 'COMMA')} + ' DH'"></td>
+                    <td>
+                        <span th:text="${p.quantity}"></span>
+                        <span class="badge bg-warning text-dark" th:if="${p.quantity < 5}">Stock faible</span>
+                    </td>
+                    <td sec:authorize="hasRole('ADMIN')">
+                        <a class="btn btn-warning btn-sm" th:href="@{/admin/editProduct(id=${p.id})}">Editer</a>
+                        <!-- Suppression via POST (formulaire) -> jeton CSRF ajoute automatiquement -->
+                        <form th:action="@{/admin/delete}" method="post" class="d-inline"
+                              onsubmit="return confirm('Etes-vous sur de vouloir supprimer ce produit ?')">
+                            <input type="hidden" name="id" th:value="${p.id}">
+                            <input type="hidden" name="page" th:value="${currentPage}">
+                            <input type="hidden" name="keyword" th:value="${keyword}">
+                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${productList.isEmpty()}">
+                    <td colspan="5" class="text-center text-muted">Aucun produit trouve</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <nav th:if="${totalPages > 1}">
+                <ul class="pagination">
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" th:text="${i + 1}"
+                           th:href="@{/user/index(page=${i}, keyword=${keyword})}"></a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+</body>
+</html>
